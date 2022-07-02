@@ -1,5 +1,5 @@
 import { Client, Interaction } from "discord.js";
-import Command from "./command";
+import Command from "./Command";
 
 export default class Module {
     client: Client<true>;
