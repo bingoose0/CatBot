@@ -1,6 +1,6 @@
 import { SlashCommandSubcommandBuilder } from "@discordjs/builders";
 import { Collection, CommandInteraction, MessageEmbed, User } from "discord.js";
-import Account from "../models/account";
+import Account from "../models/Account";
 import Module from "../module"
 
 export default class Economy extends Module {
