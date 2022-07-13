@@ -1,50 +1,43 @@
 import { SlashCommandSubcommandBuilder } from "@discordjs/builders";
-import { Collection, CommandInteraction, MessageEmbed, User } from "discord.js";
+import { CommandInteraction, MessageEmbed, User } from "discord.js";
 import Account from "../models/Account";
-import Module from "../module"
+import Module from "../Module"
 
 export default class Economy extends Module {
-    workCooldowns: Collection<string, number> = new Collection<string, number>(); // String/number is userid/reset after
 
     onReady(): void {
         this.name = "Economy";
 
-        this.commands.push({name: "balance", executor: (i) => this.balanceCmd(i), builder: new SlashCommandSubcommandBuilder()
+        this.commands.push({name: "balance", callback: (i) => this.balanceCmd(i), builder: new SlashCommandSubcommandBuilder()
             .setName("balance").setDescription("Gets your balance")});
 
-        this.commands.push({name: "register", executor: (i) => this.registerCmd(i), builder: new SlashCommandSubcommandBuilder().setName("register").setDescription("Registers you in the database")});
+        this.commands.push({name: "register", callback: (i) => this.registerCmd(i), builder: new SlashCommandSubcommandBuilder().setName("register").setDescription("Registers you in the database")});
 
-        this.commands.push({name: "work", executor: (i) => this.workCmd(i), builder: new SlashCommandSubcommandBuilder().setName("work").setDescription("Makes you work and earn money :sungl:")});
+        this.commands.push({name: "work", callback: (i) => this.workCmd(i), builder: new SlashCommandSubcommandBuilder().setName("work").setDescription("Makes you work and earn money :sungl:"), cooldown: 50});
 
-        this.commands.push({name: "pay", executor: (i) => this.payCmd(i), builder: new SlashCommandSubcommandBuilder().setName("pay").setDescription("Pays someone a certain amount of money")
+        this.commands.push({name: "pay", callback: (i) => this.payCmd(i), builder: new SlashCommandSubcommandBuilder().setName("pay").setDescription("Pays someone a certain amount of money")
             .addUserOption(input => input.setName("user").setDescription("The user to pay").setRequired(true))
             .addNumberOption(input => input.setName("amount").setDescription("The amount of money to pay").setRequired(true))});
+
+        this.commands.push({name: "gamble", cooldown: 50, callback: (i) => this.gambleCmd(i), builder: new SlashCommandSubcommandBuilder().setName("gamble").setDescription("Gambles an amount of money")
+            .addNumberOption(option => option.setName("amount").setDescription("Amount to gamble").setRequired(true))});
     }  
     
     async registeredCheck(i: CommandInteraction) {
         const result = await Account.findOne({userID: i.user.id});
         if(!result) {
             i.reply("**First, register with `/economy register`.**");
-            return null;
+            return false;
         }
 
         return result;
     }
 
-    async isRegistered(u: User) {
+    async getAccount(u: User) {
         return await Account.findOne({userID: u.id});
     }
 
     async workCmd(i: CommandInteraction) {
-        const cooldown = this.workCooldowns.get(i.user.id);
-        if(cooldown && cooldown > Date.now()) {
-            i.reply({content: "You are on cooldown.", ephemeral: true});
-            return;
-        }
-        if(cooldown) {
-            this.workCooldowns.delete(i.user.id);
-        }
-        // We're done with cooldowns, now let's check if they are registered.
         const account = await this.registeredCheck(i);
         if(!account) return;
 
@@ -53,7 +46,6 @@ export default class Economy extends Module {
         await account.save();
 
         i.reply(`:white_check_mark: **You worked and made $${randAmount}!**`)
-        this.workCooldowns.set(i.user.id, Date.now() + 60 * 1000);
     }
 
     async registerCmd(i: CommandInteraction) {
@@ -94,7 +86,7 @@ export default class Economy extends Module {
             return i.reply({content: ":x: **You can't pay yourself.**", ephemeral: true});
         }
 
-        const res = await this.isRegistered(user);
+        const res = await this.getAccount(user);
 
         if(!res) {
             return i.reply({content: ":x: **This user is not registered.**", ephemeral: true});
@@ -110,6 +102,26 @@ export default class Economy extends Module {
         await res.save();
 
         i.reply(":white_check_mark: **Success!**");
+    }
+
+    async gambleCmd(i: CommandInteraction) {
+        const amount = i.options.getNumber("amount");
+        if(amount > 200) return i.reply({content: ":x: **The amount must be below 200**.", ephemeral: true});
+        const account = await this.registeredCheck(i);
+        if(!account) return;
+
+        if(account.balance < amount) return i.reply("You can't afford this.");
+
+        const chance = Math.round(Math.random() * 2);
+        if(chance == 1) {
+            account.balance += amount;
+            await account.save()
+            i.reply("**You won, congrats!**");
+        }
+
+        account.balance -= amount;
+        await account.save();
+        i.reply("**You lost, oh noe!**");
 
     }
 }

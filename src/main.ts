@@ -3,7 +3,7 @@ import { config } from 'dotenv';
 import { REST } from '@discordjs/rest';
 import { Routes } from 'discord-api-types/v10';
 import { readdirSync } from 'fs';
-import Module from './module';
+import Module from './Module';
 import { SlashCommandBuilder } from '@discordjs/builders';
 import mongoose from 'mongoose';
 config();

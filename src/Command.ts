@@ -4,5 +4,6 @@ import { CommandInteraction } from 'discord.js';
 export default interface Command {
     name: string,
     builder: SlashCommandSubcommandBuilder,
-    executor(i: CommandInteraction);
+    callback(i: CommandInteraction),
+    cooldown?: number
 }
