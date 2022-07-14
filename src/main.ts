@@ -52,26 +52,41 @@ async function registerCommands() {
     })
 }
 
+export async function loadModule(name: string) {
+    if(!name.endsWith(".ts")) return;
+    const MODULE = await import(`./modules/${name}`);
+    const m = new MODULE.default();
+
+    if(!(m instanceof Module)) return;
+    m.init(client);
+
+    modules.push(m);
+
+    console.log(`Loaded ${m.name}`);
+}
+
+export async function unloadModule(name: string) {
+    let found = false;
+    modules.forEach((v, i) => {
+        if(v.name.toLowerCase() == name.toLowerCase()) {
+            found = true;
+            v.disableModule();
+            modules = modules.filter((val) => val != v);
+        }
+    });
+
+    return found;
+}
+
 client.on('ready', async (client) => {
     client.user.setPresence({activities: [{name: "slash commands", type: "LISTENING"}], status: "online"})
     console.log("Loading...");
     const moduleDir = readdirSync("src/modules");
 
     moduleDir.forEach(async (f, index) => {
-        if(!f.endsWith(".ts")) return;
-        const MODULE = await import(`./modules/${f}`);
-        const m = new MODULE.default();
-
-        if(!(m instanceof Module)) return;
-        m.init(client);
-
-        modules.push(m);
-
-        console.log(`Loaded ${m.name}`);
-
-        if(index == moduleDir.length - 1) {
-            await registerCommands();
-        }
+        await loadModule(f);
+        if(index == moduleDir.length - 1) await registerCommands();      
     });
-});
 
+    global.upSince = new Date();
+});

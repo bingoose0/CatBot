@@ -100,7 +100,6 @@ export default class Economy extends Module {
         account.balance -= amount;
         await account.save();
         await res.save();
-
         i.reply(":white_check_mark: **Success!**");
     }
 
