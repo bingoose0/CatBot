@@ -49,7 +49,7 @@ export default class Info extends Module {
         if(!guild) return i.reply({content: ":x: **You can only use this in a guild.**", ephemeral: true});
 
         const embed = new MessageEmbed()
-            .setAuthor({name: guild.name, iconURL: guild.iconURL()})
+            .setAuthor({name: guild.name, iconURL: guild.iconURL({dynamic: true})})
             .setColor("GREEN")
             .addField("Created", `<t:${Math.round(guild.createdTimestamp / 1000)}:R>`)
             .addField("Owner", `<@${guild.ownerId}>`);

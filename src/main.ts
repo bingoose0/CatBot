@@ -1,14 +1,14 @@
-import { Client, Collection, Intents } from 'discord.js';
+import { Client } from 'discord.js';
 import { config } from 'dotenv';
 import { REST } from '@discordjs/rest';
-import { Routes } from 'discord-api-types/v10';
+import { ActivityType, GatewayIntentBits, Routes } from 'discord-api-types/v10';
 import { readdirSync } from 'fs';
 import Module from './Module';
 import { SlashCommandBuilder } from '@discordjs/builders';
 import mongoose from 'mongoose';
 config();
 
-const client = new Client({intents: [Intents.FLAGS.GUILDS]});
+const client = new Client({intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers]});
 const rest = new REST({version: '10'}).setToken((process.env.TOKEN as string));
 let modules: Module[] = [];
 
@@ -62,7 +62,7 @@ export async function loadModule(name: string) {
 
     modules.push(m);
 
-    console.log(`Loaded ${m.name}`);
+    m.info("Loaded");
 }
 
 export async function unloadModule(name: string) {
@@ -79,7 +79,7 @@ export async function unloadModule(name: string) {
 }
 
 client.on('ready', async (client) => {
-    client.user.setPresence({activities: [{name: "slash commands", type: "LISTENING"}], status: "online"})
+    client.user.setPresence({activities: [{name: "slash commands", type: ActivityType.Listening}], status: "online"})
     console.log("Loading...");
     const moduleDir = readdirSync("src/modules");
 
